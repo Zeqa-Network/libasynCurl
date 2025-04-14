@@ -23,7 +23,7 @@ abstract class CurlTask extends AsyncTask
     /** @var string */
     protected string $headers;
 
-    public function __construct(string $page, int $timeout, array $headers, Closure $closure = null)
+    public function __construct(string $page, int $timeout, array $headers, ?Closure $closure = null, ?Closure $onError = null)
     {
         $this->page = $page;
         $this->timeout = $timeout;
@@ -38,6 +38,9 @@ abstract class CurlTask extends AsyncTask
             Utils::validateCallableSignature(function (?InternetRequestResult $result): void {}, $closure);
             $this->storeLocal('closure', $closure);
         }
+        if($onError !== null){
+            $this->storeLocal('onError', $onError);
+        }
     }
 
     public function getHeaders(): array
@@ -50,15 +53,27 @@ abstract class CurlTask extends AsyncTask
 
     public function onCompletion(): void
     {
+        $onError = null;
         try {
             /** @var Closure $closure */
             $closure = $this->fetchLocal('closure');
         } catch (InvalidArgumentException $exception) {
             return;
         }
+        try{
+            $onError = $this->fetchLocal('onError');
+        }catch (InvalidArgumentException $exception) {}
 
         if ($closure !== null) {
-            $closure($this->getResult());
+            $result = $this->getResult();
+            if($result instanceof InternetRequestResult){
+                $closure($result);
+                return;
+            }
+            $closure($result[0] ?? null);
+            if($onError !== null){
+                $onError($result[1] ?? null);
+            }
         }
     }
 }
