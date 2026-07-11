@@ -8,6 +8,7 @@ namespace libasynCurl;
 
 use Closure;
 use InvalidArgumentException;
+use libasynCurl\thread\CurlCustomTask;
 use libasynCurl\thread\CurlGetTask;
 use libasynCurl\thread\CurlPostTask;
 use libasynCurl\thread\CurlThreadPool;
@@ -51,5 +52,10 @@ class Curl
     public static function getRequest(string $page, int $timeout = 10, array $headers = [], ?Closure $closure = null, ?Closure $onError = null): void
     {
         self::$threadPool->submitTask(new CurlGetTask($page, $timeout, $headers, $closure, $onError));
+    }
+
+    public static function customRequest(string $page, string $method, array|string $args, int $timeout = 10, array $headers = [], ?Closure $closure = null): void
+    {
+        self::$threadPool->submitTask(new CurlCustomTask($page, $method, $args, $timeout, $headers, $closure));
     }
 }
